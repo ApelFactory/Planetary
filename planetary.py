@@ -1,149 +1,242 @@
+from kivy.app import App
+from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition, NoTransition
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.button import Button
+from kivy.uix.textinput import TextInput
+from kivy.uix.image import AsyncImage
+from kivy.graphics import Rectangle, Color
+from kivy.animation import Animation
 import requests
 import random
-from tkinter import *
-from PIL import Image, ImageTk
-from io import BytesIO
 
-API_KEY = "b14wLhkDZppo37G5Y49EpdI4GAgSHoAMVxoLC6Eu"
+API_KEY = "DEMO_KEY"
 
-# DATA PLANET
+# === DATA PLANET ===
 planets = {
-    "Mercury": "Closest planet to the Sun.",
-    "Venus": "Hottest planet.",
-    "Earth": "Our home planet.",
-    "Mars": "Red planet.",
-    "Jupiter": "Largest planet.",
-    "Saturn": "Has rings.",
-    "Uranus": "Rotates sideways.",
-    "Neptune": "Strongest winds."
+    "Mercury": {
+        "desc": "The smallest and closest planet to the Sun.",
+        "distance": "57.9 million km",
+        "diameter": "4,879 km",
+        "fact": "A year lasts 88 days.",
+        "vibe": "☀️ Extreme",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/4/4a/Mercury_in_true_color.jpg"
+    },
+    "Venus": {
+        "desc": "A hot planet with thick toxic clouds.",
+        "distance": "108.2 million km",
+        "diameter": "12,104 km",
+        "fact": "Spins backwards.",
+        "vibe": "🔥 Hottest",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/e/e5/Venus-real_color.jpg"
+    },
+    "Earth": {
+        "desc": "Our home planet full of life.",
+        "distance": "149.6 million km",
+        "diameter": "12,742 km",
+        "fact": "71% water.",
+        "vibe": "🌍 Life",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg"
+    },
+    "Mars": {
+        "desc": "The Red Planet.",
+        "distance": "227.9 million km",
+        "diameter": "6,779 km",
+        "fact": "Tallest volcano.",
+        "vibe": "🔴 Future",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/0/02/OSIRIS_Mars_true_color.jpg"
+    },
+    "Jupiter": {
+        "desc": "Largest planet with giant storms.",
+        "distance": "778.5 million km",
+        "diameter": "139,820 km",
+        "fact": "Great Red Spot storm.",
+        "vibe": "🌪️ Giant",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/e/e2/Jupiter.jpg"
+    },
+    "Saturn": {
+        "desc": "Famous for its rings.",
+        "distance": "1.4 billion km",
+        "diameter": "116,460 km",
+        "fact": "Could float in water.",
+        "vibe": "💍 Rings",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Saturn_during_Equinox.jpg"
+    },
+    "Uranus": {
+        "desc": "Rotates sideways.",
+        "distance": "2.9 billion km",
+        "diameter": "50,724 km",
+        "fact": "Extreme seasons.",
+        "vibe": "🧊 Sideways",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Uranus2.jpg"
+    },
+    "Neptune": {
+        "desc": "Strongest winds.",
+        "distance": "4.5 billion km",
+        "diameter": "49,244 km",
+        "fact": "Fastest winds.",
+        "vibe": "🌊 Stormy",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/5/56/Neptune_Full.jpg"
+    }
 }
 
-# === FUNCTIONS ===
+# === UI BACKGROUND ===
+class Gradient(BoxLayout):
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        with self.canvas.before:
+            Color(0.07, 0.1, 0.2, 1)
+            self.rect = Rectangle(size=self.size, pos=self.pos)
+        self.bind(size=self._u, pos=self._u)
 
-def show_menu():
-    clear()
-    Label(root, text="Planetary App",
-          bg=bg, fg="white", font=("Arial", 16, "bold")).pack(pady=20)
+    def _u(self, *a):
+        self.rect.size = self.size
+        self.rect.pos = self.pos
 
-    Button(root, text="Explore Planets", command=explore_ui,
-           bg=btn, fg="white").pack(pady=10)
+# === BASE SCREEN ===
+class Base(Screen):
+    def on_enter(self):
+        self.opacity = 0
+        Animation(opacity=1, duration=0.3).start(self)
 
-    Button(root, text="Space Quiz", command=quiz_ui,
-           bg=btn, fg="white").pack(pady=10)
+def go(sm, target, direction="left"):
+    sm.transition = SlideTransition(direction=direction, duration=0.25)
+    sm.current = target
 
-    Button(root, text="NASA Image", command=nasa_ui,
-           bg=btn, fg="white").pack(pady=10)
+# === HOME ===
+class Home(Base):
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        layout = Gradient(orientation='vertical', padding=20, spacing=12)
 
+        layout.add_widget(Label(text="🌌 Astronaut Super App 🚀", font_size=22))
 
-def explore_ui():
-    clear()
-    Label(root, text="Choose Planet",
-          bg=bg, fg="white").pack(pady=10)
+        for text, target in [
+            ("🪐 Explore Planets", "planet"),
+            ("🧠 Space Quiz", "quiz"),
+            ("🌌 NASA Image", "nasa")
+        ]:
+            b = Button(text=text, size_hint=(1, None), height=50,
+                       background_color=(0.4, 0.3, 1, 1))
+            b.bind(on_press=lambda x, t=target: go(self.manager, t))
+            layout.add_widget(b)
 
-    for p in planets:
-        Button(root, text=p,
-               command=lambda x=p: show_planet(x),
-               bg=btn, fg="white").pack(pady=5)
+        self.add_widget(layout)
 
-    back_btn()
+# === PLANET ===
+class Planet(Base):
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self.layout = Gradient(orientation='vertical', padding=20, spacing=10)
 
+        self.img = AsyncImage(size_hint=(1, 0.5))
+        self.layout.add_widget(self.img)
 
-def show_planet(name):
-    clear()
-    Label(root, text=f"{name}",
-          bg=bg, fg="white", font=("Arial", 14)).pack(pady=10)
+        self.info = Label(text="Tap a planet", halign="center")
+        self.layout.add_widget(self.info)
 
-    Label(root, text=planets[name],
-          bg=bg, fg="gray").pack(pady=10)
+        for p in planets:
+            b = Button(text=p)
+            b.bind(on_press=lambda x, p=p: self.show(p))
+            self.layout.add_widget(b)
 
-    back_btn()
+        back = Button(text="⬅ Back")
+        back.bind(on_press=lambda x: go(self.manager, "home", "right"))
+        self.layout.add_widget(back)
 
+        self.add_widget(self.layout)
 
-def quiz_ui():
-    clear()
-    global score, question_list
-    score = 0
-    question_list = list(planets.items())
-    random.shuffle(question_list)
-    ask_question(0)
+    def show(self, name):
+        data = planets[name]
+        self.img.source = data["img"]
 
+        self.info.text = (
+            f"🪐 {name}\n\n"
+            f"{data['desc']}\n\n"
+            f"📏 {data['diameter']}\n"
+            f"🌞 {data['distance']}\n\n"
+            f"✨ {data['fact']}\n"
+            f"{data['vibe']}"
+        )
 
-def ask_question(i):
-    clear()
-    if i >= 5:
-        Label(root, text=f"Score: {score}/5",
-              bg=bg, fg="white").pack(pady=20)
-        back_btn()
-        return
+# === QUIZ ===
+class Quiz(Base):
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self.layout = Gradient(orientation='vertical', padding=20, spacing=10)
 
-    name, fact = question_list[i]
+        self.q = Label(text="")
+        self.layout.add_widget(self.q)
 
-    Label(root, text=f"Which planet: {fact}",
-          bg=bg, fg="white", wraplength=300).pack(pady=20)
+        self.input = TextInput(hint_text="Your answer")
+        self.layout.add_widget(self.input)
 
-    entry = Entry(root)
-    entry.pack(pady=10)
+        btn = Button(text="Submit")
+        btn.bind(on_press=self.check)
+        self.layout.add_widget(btn)
 
-    def check():
-        global score
-        if entry.get().capitalize() == name:
-            score += 1
-        ask_question(i + 1)
+        back = Button(text="⬅ Back")
+        back.bind(on_press=lambda x: go(self.manager, "home", "right"))
+        self.layout.add_widget(back)
 
-    Button(root, text="Submit", command=check,
-           bg=btn, fg="white").pack(pady=10)
+        self.add_widget(self.layout)
+        self.new_q()
 
+    def new_q(self):
+        self.cur = random.choice(list(planets.keys()))
+        self.q.text = f"Which planet is this: {planets[self.cur]['fact']}"
+        self.input.text = ""
 
-def nasa_ui():
-    clear()
+    def check(self, *_):
+        if self.input.text.capitalize() == self.cur:
+            self.q.text = "✅ Correct!"
+        else:
+            self.q.text = f"❌ Wrong! {self.cur}"
+        self.new_q()
 
-    Label(root, text="NASA Image",
-          bg=bg, fg="white").pack(pady=10)
+# === NASA ===
+class Nasa(Base):
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self.layout = Gradient(orientation='vertical', padding=20, spacing=10)
 
-    try:
-        url = f"https://api.nasa.gov/planetary/apod?api_key={API_KEY}"
-        data = requests.get(url).json()
+        self.title = Label(text="NASA Image")
+        self.layout.add_widget(self.title)
 
-        Label(root, text=data["title"],
-              bg=bg, fg="white", wraplength=300).pack(pady=5)
+        self.img = AsyncImage(size_hint=(1, 0.6))
+        self.layout.add_widget(self.img)
 
-        img_data = requests.get(data["url"]).content
-        img = Image.open(BytesIO(img_data))
-        img = img.resize((300, 200))
+        btn = Button(text="Load NASA Image")
+        btn.bind(on_press=self.load)
+        self.layout.add_widget(btn)
 
-        img_tk = ImageTk.PhotoImage(img)
-        img_label = Label(root, image=img_tk, bg=bg)
-        img_label.image = img_tk
-        img_label.pack(pady=10)
+        back = Button(text="⬅ Back")
+        back.bind(on_press=lambda x: go(self.manager, "home", "right"))
+        self.layout.add_widget(back)
 
-    except:
-        Label(root, text="Failed to load NASA data",
-              bg=bg, fg="red").pack()
+        self.add_widget(self.layout)
 
-    back_btn()
+    def load(self, *_):
+        try:
+            data = requests.get(
+                f"https://api.nasa.gov/planetary/apod?api_key={API_KEY}"
+            ).json()
 
+            self.title.text = data["title"]
+            self.img.source = data["url"]
+        except:
+            self.title.text = "Failed to load data"
 
-def back_btn():
-    Button(root, text="Back",
-           command=show_menu,
-           bg="#374151", fg="white").pack(pady=15)
+# === APP ===
+class SuperApp(App):
+    def build(self):
+        sm = ScreenManager(transition=NoTransition())
 
+        sm.add_widget(Home(name="home"))
+        sm.add_widget(Planet(name="planet"))
+        sm.add_widget(Quiz(name="quiz"))
+        sm.add_widget(Nasa(name="nasa"))
 
-def clear():
-    for widget in root.winfo_children():
-        widget.destroy()
+        return sm
 
-
-# === UI SETUP ===
-root = Tk()
-root.title("Planetary App")
-root.geometry("350x500")
-
-bg = "#0f172a"
-btn = "#6366f1"
-
-root.configure(bg=bg)
-
-show_menu()
-
-root.mainloop()
+SuperApp().run()
