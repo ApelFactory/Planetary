@@ -11,4 +11,4 @@ My first astronomy project using Python.
 - Python (Pydroid 3)
 
 ## Author
-Anastasya 🚀
+ApelFactory 🫣
