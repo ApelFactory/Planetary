@@ -10,9 +10,8 @@ from kivy.animation import Animation
 import requests
 import random
 
-API_KEY = "DEMO_KEY"
+API_KEY = "b14wLhkDZppo37G5Y49EpdI4GAgSHoAMVxoLC6Eu"
 
-# === DATA PLANET ===
 planets = {
     "Mercury": {
         "desc": "The smallest and closest planet to the Sun.",
@@ -75,12 +74,11 @@ planets = {
         "distance": "4.5 billion km",
         "diameter": "49,244 km",
         "fact": "Fastest winds.",
-        "vibe": "🌊 Stormy",
+        "vibe": "Stormy",
         "img": "https://upload.wikimedia.org/wikipedia/commons/5/56/Neptune_Full.jpg"
     }
 }
 
-# === UI BACKGROUND ===
 class Gradient(BoxLayout):
     def __init__(self, **kw):
         super().__init__(**kw)
